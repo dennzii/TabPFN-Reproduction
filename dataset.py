@@ -172,7 +172,15 @@ class TabPFN_Dataset(IterableDataset):
 
         total_nodes = layer_sizes_cumsum[-1].item()
         candidate_indices = [i for i in range(total_nodes) if i != zy_node_index]#excluding zy.
-        total_feature_num = torch.randint(2, len(candidate_indices) + 1, (1,)).item()
+
+        #total_feature_num = torch.randint(2, len(candidate_indices) + 1, (1,)).item()
+        '''
+        In paper, it is stated that one of limitations is max_num_features = 100 
+        '''
+        MAX_NUM_FEATURES = 100
+        total_feature_num = torch.randint(2, MAX_NUM_FEATURES + 1, (1,)).item()
+
+
 
         X_indices = []
         #Blockwise choice. burayı yazması biraz zorladı.
@@ -207,6 +215,10 @@ class TabPFN_Dataset(IterableDataset):
 
         selected_columns = [columns[i] for i in X_indices]
         X = torch.cat(selected_columns,dim=1)
+
+        MAX_CLASSES = 10
+        num_classes = torch.randint(2, MAX_CLASSES + 1, (1,)).item()
+
 
         return X, Zy
 
@@ -243,8 +255,9 @@ class TabPFN_Dataset(IterableDataset):
 
     def __iter__(self):
 
-
-
+        A, layer_sizes = ds.generate_random_dag()
+        X, Zy = ds.generate_data_from_dag(A, layer_sizes, num_samples=100)
+        
         return 
 
 
