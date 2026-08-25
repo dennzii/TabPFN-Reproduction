@@ -1,6 +1,7 @@
 import torch
 from torch.utils.data import IterableDataset
 from torch.distributions import Beta
+import random
 
 
 class TabPFN_Dataset(IterableDataset):
@@ -110,13 +111,16 @@ class TabPFN_Dataset(IterableDataset):
         mask = (torch.rand_like(A) > mlp_dropout_threshold).long()
         A = A * mask 
 
-        return A
+        return A, layer_sizes
 
     
-    def generate_data_from_dag(self, dag, num_samples):
+    def generate_data_from_dag(self, dag,layer_sizes, num_samples,):
         
         activation_func = self.random_activation_func()
          #We sample one activation function a per dataset from {T anh, LeakyReLU, ELU, Identity} from paper TabPFN
+
+        layer_sizes_cumsum = torch.cumsum(torch.tensor(layer_sizes), dim=0)
+        layer_sizes_cumsum = torch.concatenate((torch.tensor([0]), layer_sizes_cumsum))
 
         columns = []
         for i in range(dag.shape[0]):
@@ -124,27 +128,87 @@ class TabPFN_Dataset(IterableDataset):
             parent_matrix = None
             if torch.sum(dag[i,:]) == 0:
                 #determine root value.
-                root_column = torch.random.randn(num_samples, 1)# we should concat in axis = 1 in the future..
+                root_column = torch.randn(num_samples, 1)# we should concat in axis = 1 in the future..
                 columns.append(root_column)
             else:
+
                 parent_indices = torch.where(dag[i,:] == 1)[0] # [0] returns true ones.
                 parent_columns = [columns[idx] for idx in parent_indices]
 
                 parent_matrix = torch.concat(parent_columns, axis=1)
 
-                itorchut_size = parent_matrix.shape[1] # girdi feature sayısı
+                input_size = parent_matrix.shape[1] # girdi feature sayısı
 
-                
-                
-                W = torch.random.randn(*(itorchut_size,1))
-                b = torch.random.randn(1) #aka epsilon acts as random noise-like
-                
+                w_std = self.tnlu(min_mean=0.01, max_mean=10.0, min_val=0.0, round=False) 
+                W = torch.randn(*(input_size,1)) * w_std
 
-                column = activation_func(parent_matrix @ W + b)
-
+                #Gaussian Noise Std. TNLU 0.3 0.0001 False 0.0
+                noise_std = self.tnlu(min_mean=0.0001, max_mean=0.3, min_val=0.0, round=False)
+                noise = torch.randn((num_samples,1)) * noise_std #aka epsilon acts as random noise-like
+                
+                column = activation_func(parent_matrix @ W + noise)
                 columns.append(column)
+
+        #Choose Zy
+        sample_y_from_last_layer = (torch.rand(1) > 0.5).long()
+
+        zy_node_index = None
+
+        if sample_y_from_last_layer:
+            last_layer_end = layer_sizes_cumsum[-1]
+            last_layer_start = layer_sizes_cumsum[-2]
+
+            zy_node_index = torch.randint(last_layer_start, last_layer_end, (1,)).item()
+        else:
+            layers_end = layer_sizes_cumsum[-1]
+            layers_start = 0
+
+            zy_node_index = torch.randint(layers_start, layers_end,(1,)).item()
+
+        #Choose X nodes
+        sample_feature_nodes_blockwise = (torch.rand(1) > 0.5).long()
+        keep_SCM_feature_order = (torch.rand(1) > 0.5).long()
+
+
+        total_nodes = layer_sizes_cumsum[-1].item()
+        candidate_indices = [i for i in range(total_nodes) if i != zy_node_index]#excluding zy.
+        total_feature_num = torch.randint(2, len(candidate_indices) + 1, (1,)).item()
+
+        X_indices = []
+        #Blockwise choice. burayı yazması biraz zorladı.
+        if sample_feature_nodes_blockwise:
+
+
+            residual_feature_num = total_feature_num
+            
+            for l,layer_size in enumerate(layer_sizes):
+                if residual_feature_num == 0:
+                    break
+
+                start = layer_sizes_cumsum[l]
+                end = layer_sizes_cumsum[l+1]
+
+                block_feature_num = torch.randint(1,min(residual_feature_num,layer_size) + 1,(1,)).item()
+
+                start = torch.randint(start, end - block_feature_num + 1, (1,)).item()
+                # Alınan dilim:
+                chosen_nodes = list(range(start, start + block_feature_num))
+                X_indices.extend(chosen_nodes)# seçilen indisleri ekledik.
+                residual_feature_num = residual_feature_num - block_feature_num
+        else: # directly chose random k features.
+            X_indices = random.sample(candidate_indices, total_feature_num)
+
         
-        return columns
+        if not keep_SCM_feature_order:
+            random.shuffle(X_indices)
+        
+        Zy = columns[zy_node_index]
+        
+
+        selected_columns = [columns[i] for i in X_indices]
+        X = torch.cat(selected_columns,dim=1)
+
+        return X, Zy
 
 
     def random_activation_func(self):
@@ -161,7 +225,7 @@ class TabPFN_Dataset(IterableDataset):
         def elu(x, alpha=1.0):
             return torch.where(x > 0, x, alpha * (torch.exp(torch.clip(x, -50, 50)) - 1))
             
-        choice = torch.random.choice(4)#random uniform choice from activation funcs.
+        choice = torch.randint(0, 4, (1,)).item()#random uniform choice from activation funcs.
         func = identity
 
         if choice == 0:
@@ -185,15 +249,13 @@ class TabPFN_Dataset(IterableDataset):
 
 
 ds = TabPFN_Dataset()
-
-A = ds.generate_random_dag()
-
-#threshold=float('inf') #-> Hiçbir elemanı '...' ile gizleme, hepsini bas
-# linewidth=200 -> Satırları erkenden alt satıra kırma
-torch.set_printoptions(threshold=float('inf'), linewidth=200)
-
-print(A.int())
-
+# 1. Çizgeyi ve katman boyutlarını üret
+A, layer_sizes = ds.generate_random_dag()
+# 2. 100 satırlık veriyi üret
+X, Zy = ds.generate_data_from_dag(A, layer_sizes, num_samples=100)
+print("A Adjacency Shape:", A.shape)
+print("X Feature Matrix Shape:", X.shape)
+print("Zy Target Shape:", Zy.shape)
 
 
         
