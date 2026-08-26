@@ -260,11 +260,10 @@ class TabPFN_Dataset(IterableDataset):
 
     def __iter__(self):
         
-        A, layer_sizes = ds.generate_random_dag()
+        A, layer_sizes = self.generate_random_dag()
 
-        X, y = ds.generate_data_from_dag(A, layer_sizes, num_samples=torch.randint(100,1000,(1)))
+        X, y = self.generate_data_from_dag(A, layer_sizes, num_samples=torch.randint(100,1000,(1)))
 
         yield X,y
-        
-        return 
+         
 
