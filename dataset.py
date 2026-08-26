@@ -1,6 +1,7 @@
 import torch
 from torch.utils.data import IterableDataset
 from torch.distributions import Beta
+from torch.nn.functional import leaky_relu,elu,tanh
 import random
 
 
@@ -177,9 +178,9 @@ class TabPFN_Dataset(IterableDataset):
         '''
         In paper, it is stated that one of limitations is max_num_features = 100 
         '''
-        MAX_NUM_FEATURES = 100
+        MAX_NUM_FEATURES = min(candidate_indices,100)
         total_feature_num = torch.randint(2, MAX_NUM_FEATURES + 1, (1,)).item()
-
+        
 
 
         X_indices = []
@@ -216,26 +217,31 @@ class TabPFN_Dataset(IterableDataset):
         selected_columns = [columns[i] for i in X_indices]
         X = torch.cat(selected_columns,dim=1)
 
+        mu_columns = torch.mean(X,dim=0)
+        std_columns = torch.std(X,dim=0)
+        
+        X_norm = (X - mu_columns) / (std_columns + 1e-8)
+
         MAX_CLASSES = 10
         num_classes = torch.randint(2, MAX_CLASSES + 1, (1,)).item()
 
+        rand_indices = torch.randperm(len(Zy))[:num_classes - 1]
+        class_bounds, _ = torch.sort(Zy.flatten()[rand_indices])
 
-        return X, Zy
+        # assign class labels
+        y = torch.bucketize(Zy, class_bounds)
+
+        # shuffle
+        shuffled_classes = torch.randperm(num_classes)
+        y = shuffled_classes[y]
+
+        return X_norm, y
 
 
     def random_activation_func(self):
 
         def identity(x):
             return x
-        # 2. Tanh (Hiperbolik Tanjant)
-        def tanh(x):
-            return torch.tanh(x)
-        # 3. Leaky ReLU
-        def leaky_relu(x, alpha=0.01):
-            return torch.where(x > 0, x, alpha * x)
-        # 4. ELU (Exponential Linear Unit)
-        def elu(x, alpha=1.0):
-            return torch.where(x > 0, x, alpha * (torch.exp(torch.clip(x, -50, 50)) - 1))
             
         choice = torch.randint(0, 4, (1,)).item()#random uniform choice from activation funcs.
         func = identity
@@ -252,23 +258,13 @@ class TabPFN_Dataset(IterableDataset):
         return func
         
 
-
     def __iter__(self):
-
+        
         A, layer_sizes = ds.generate_random_dag()
-        X, Zy = ds.generate_data_from_dag(A, layer_sizes, num_samples=100)
+
+        X, y = ds.generate_data_from_dag(A, layer_sizes, num_samples=torch.randint(100,1000,(1)))
+
+        yield X,y
         
         return 
 
-
-ds = TabPFN_Dataset()
-# 1. Çizgeyi ve katman boyutlarını üret
-A, layer_sizes = ds.generate_random_dag()
-# 2. 100 satırlık veriyi üret
-X, Zy = ds.generate_data_from_dag(A, layer_sizes, num_samples=100)
-print("A Adjacency Shape:", A.shape)
-print("X Feature Matrix Shape:", X.shape)
-print("Zy Target Shape:", Zy.shape)
-
-
-        
