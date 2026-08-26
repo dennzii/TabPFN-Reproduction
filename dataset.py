@@ -178,8 +178,9 @@ class TabPFN_Dataset(IterableDataset):
         '''
         In paper, it is stated that one of limitations is max_num_features = 100 
         '''
-        MAX_NUM_FEATURES = min(candidate_indices,100)
-        total_feature_num = torch.randint(2, MAX_NUM_FEATURES + 1, (1,)).item()
+        MAX_NUM_FEATURES = 100
+        num_features = min(len(candidate_indices),100)
+        total_feature_num = torch.randint(2, num_features + 1, (1,)).item()
         
 
 
@@ -235,7 +236,26 @@ class TabPFN_Dataset(IterableDataset):
         shuffled_classes = torch.randperm(num_classes)
         y = shuffled_classes[y]
 
-        return X_norm, y
+        
+
+        #zero padding to 100
+        
+        N, k = X_norm.shape
+        X_padded = torch.zeros((N, MAX_NUM_FEATURES))
+        X_padded[:,:k] = X_norm
+
+
+        '''
+        Our encoder changes to accomodate this
+        training and inference with different numbers of features by zero-padding datasets where the number
+        of features k is smaller than the maximum number of features K and scaling these features by K
+        k, s.t. the magnitude stays the same.
+        '''
+        scale = MAX_NUM_FEATURES / k
+
+        X_padded = X_padded * scale
+
+        return X_padded, y
 
 
     def random_activation_func(self):
@@ -260,10 +280,23 @@ class TabPFN_Dataset(IterableDataset):
 
     def __iter__(self):
         
-        A, layer_sizes = self.generate_random_dag()
+        while True:
+            A, layer_sizes = self.generate_random_dag()
 
-        X, y = self.generate_data_from_dag(A, layer_sizes, num_samples=torch.randint(100,1000,(1)))
+            #Each dataset had a fixed size of 1024 and we split it into training and validation uniformly at random.
+            NUM_SAMPLES = 1024
+            X, y = self.generate_data_from_dag(A, layer_sizes, num_samples=NUM_SAMPLES)
 
-        yield X,y
+            #train test split.
+            N_train = torch.randint(100, 900, (1,)).item()
+            N_test = NUM_SAMPLES - N_train
+
+            X_train = X[:N_train,:]
+            y_train = y[:N_train]
+
+            X_test = X[N_train:,:]
+            y_test = y[N_train:]
+
+            yield X_train,y_train,X_test,y_test
          
 
