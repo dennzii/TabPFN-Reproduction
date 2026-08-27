@@ -174,4 +174,6 @@ def train(LR=1e-4,TOTAL_STEPS=18000,BS=256):
             print("--> Eğitim başarıyla tamamlandı!")
             break
     
-train()
+
+
+
