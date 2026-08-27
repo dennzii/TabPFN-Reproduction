@@ -32,7 +32,7 @@ To be implemented:
 
 ---
 
-## ⚙️ Training Setup
+## Training Setup
 
 * **Hardware:** NVIDIA G4 / RTX 6000 Ada (96 GB VRAM) on COLAB
 * **Training Time:** ~10 hours
@@ -50,7 +50,7 @@ To be implemented:
 
 ---
 
-## 📉 Training Loss Curve
+## Training Loss Curve
 
 Exponential Moving Average (EMA) cross-entropy loss recorded every 100 steps during pre-training:
 
@@ -105,7 +105,7 @@ Evaluated on the official meta-test suite of **30 OpenML-CC18** datasets (50/50 
 
 ---
 
-Clearly, as also stated in the paper. Within the datasets with lots of categorical features may lead TabPFN to predict worse. 
+Clearly, as also stated in the paper. Within the datasets with lots of categorical features may lead TabPFN to perform worse. 
 
 ## Quickstart & Inference
 
