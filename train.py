@@ -88,7 +88,7 @@ def train(LR=1e-4,TOTAL_STEPS=18000,BS=256):
 
     scheduler = get_cosine_schedule_with_warmup(
                                                 optimizer,
-                                                num_warmup_steps= 3000,        # Isınma adım sayısı
+                                                num_warmup_steps= 1000,        # Isınma adım sayısı
                                                 num_training_steps=TOTAL_STEPS    # Toplam eğitim adım sayısı
                                                 )
 
