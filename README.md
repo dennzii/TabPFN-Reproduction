@@ -2,9 +2,10 @@
 
 A clean PyTorch reproduction of [TabPFN: A Transformer That Solves Small Tabular Classification Problems in a Second](https://arxiv.org/abs/2207.01848) (ICLR 2023), implementing the synthetic Structural Causal Model (SCM) prior data generation pipeline and Transformer architecture from scratch.
 
+Note: Gemini used for theoritical guidance and code reviewing. Entire implementations (except benchmark.py) is done by me.
 ---
 
-## 📌 Implemented SCM Prior Parameters
+## Implemented SCM Prior Parameters
 
 The prior parameters highlighted in yellow from **Table 5** of the TabPFN paper are implemented in this repository:
 
@@ -24,11 +25,16 @@ The prior parameters highlighted in yellow from **Table 5** of the TabPFN paper 
     * **MLP Weights Std:** $\hat{\mu}=10.0, \check{\mu}=0.01, \min=0.0$
     * **SCM #nodes at layer 1:** $\hat{\mu}=12, \check{\mu}=1, \min=1$
 
+To be implemented:
+* **Sample SCM vs BNN**: Uniform Choice {True, False}
+* **Share Noise mean for**: nodes Uniform Choice {True, False}
+* **Input feature scaling enabled**: Uniform Choice {True, False}
+
 ---
 
 ## ⚙️ Training Setup
 
-* **Hardware:** NVIDIA G4 / RTX 6000 Ada (96 GB VRAM)
+* **Hardware:** NVIDIA G4 / RTX 6000 Ada (96 GB VRAM) on COLAB
 * **Training Time:** ~10 hours
 * **Total Steps:** 18,000 optimization steps
 * **Batch Size:** 256 (256 synthetic SCM datasets per gradient update)
@@ -52,14 +58,14 @@ Exponential Moving Average (EMA) cross-entropy loss recorded every 100 steps dur
 
 ---
 
-## 💾 Pre-trained Checkpoint
+## Pre-trained Checkpoint
 
 Pre-trained weights at step 18,000 are available for download:
 * **Google Drive:** [tabpfn_step_18000.pt (Download)](https://drive.google.com/file/d/19S0lVQJDsNzIcI4pxF6qIXM8-mag-1G3/view?usp=sharing)
 
 ---
 
-## 📊 Benchmark Results (30 OpenML-CC18 Datasets)
+## Benchmark Results (30 OpenML-CC18 Datasets)
 
 Evaluated on the official meta-test suite of **30 OpenML-CC18** datasets (50/50 Train-Test split). Comparison between the Single Forward Pass (`n_ensemble=1`) and the 32-Permutation Ensemble (`n_ensemble=32`):
 
@@ -99,7 +105,9 @@ Evaluated on the official meta-test suite of **30 OpenML-CC18** datasets (50/50 
 
 ---
 
-## 🚀 Quickstart & Inference
+Clearly, as also stated in the paper. Within the datasets with lots of categorical features may lead TabPFN to predict worse. 
+
+## Quickstart & Inference
 
 ### 1. Installation
 ```bash
@@ -122,7 +130,7 @@ model.load_state_dict(checkpoint['model_state_dict'])
 
 # Single forward pass zero-shot prediction
 # X_train: [N_train, k], y_train: [N_train], X_test: [N_test, k]
-predictions = predict(model, X_train, y_train, X_test, n_ensemble=32)
+predictions = predict(model, X_train, y_train, X_test, n_ensemble=32) # includes all normalization stuff here
 ```
 
 ## References
