@@ -287,16 +287,8 @@ class TabPFN_Dataset(IterableDataset):
             NUM_SAMPLES = 1024
             X, y = self.generate_data_from_dag(A, layer_sizes, num_samples=NUM_SAMPLES)
 
-            #train test split.
-            N_train = torch.randint(100, 900, (1,)).item()
-            N_test = NUM_SAMPLES - N_train
+            
 
-            X_train = X[:N_train,:]
-            y_train = y[:N_train]
-
-            X_test = X[N_train:,:]
-            y_test = y[N_train:]
-
-            yield X_train,y_train,X_test,y_test
+            yield X,y
          
 
