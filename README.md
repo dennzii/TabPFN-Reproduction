@@ -105,7 +105,7 @@ Evaluated on the official meta-test suite of **30 OpenML-CC18** datasets (50/50 
 
 ---
 
-Clearly, as also stated in the paper. Within the datasets with lots of categorical features may lead TabPFN to perform worse. 
+Clearly, as also stated in the paper. inference on datasets with lots of categorical features may lead model to perform worse. (nearly random prediction, at least in my case). 
 
 ## Quickstart & Inference
 
