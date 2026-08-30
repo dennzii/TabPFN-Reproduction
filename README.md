@@ -18,8 +18,8 @@ The prior parameters highlighted in yellow from **Table 5** of the TabPFN paper 
 * **Activation Functions:** Uniform choice across `{Tanh, Leaky ReLU, ELU, Identity}`
 * **Blockwise Dropout & Feature Ordering:** Preserves causal feature groups and structural blocks
 * **Two-Stage TNLU Sampling ($\text{TNLU}(h \mid \check{\mu}, \hat{\mu}, \min, \text{round})$):**
-  * Means and standard deviations are first drawn from a log-uniform distribution: $\mu, \sigma \sim \text{LogUniform}(\check{\mu}, \hat{\mu})$
-  * Final quantities are sampled from the resulting truncated normal: $v \sim \text{TruncNormal}(\mu, \sigma^2, a=0, b=\infty)$, rounded, and shifted by $\min$:
+  * Means and standard deviations are  sampled from a log-uniform distribution
+  * Final quantities are sampled from the resulting truncated normal distr.
     * **MLP #layers:** $\hat{\mu}=6, \check{\mu}=1, \min=2$
     * **MLP #hidden nodes per layer:** $\hat{\mu}=130, \check{\mu}=5, \min=4$
     * **Gaussian Noise Std:** $\hat{\mu}=0.3, \check{\mu}=0.0001, \min=0.0$
