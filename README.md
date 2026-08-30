@@ -2,7 +2,8 @@
 
 A clean PyTorch reproduction of [TabPFN: A Transformer That Solves Small Tabular Classification Problems in a Second](https://arxiv.org/abs/2207.01848) (ICLR 2023), implementing the synthetic Structural Causal Model (SCM) prior data generation pipeline and Transformer architecture from scratch.
 
-Note: Gemini used for theoritical guidance and code reviewing. Entire implementations (except benchmark.py) is done by me.
+Note: Gemini used for theoretical guidance and code reviewing. 
+implementations (except benchmark.py) is done by me.
 ---
 
 ## Implemented SCM Prior Parameters
